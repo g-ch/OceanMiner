@@ -66,8 +66,8 @@ class ScanFile(object):
         return subdir_list  
   
 if __name__=="__main__":  
-    #dir="/home/clarence/Desktop/OceanMiner/Training"  
-    dir="/home/clarence/Desktop/OceanMiner/Testing"  
+    dir="/home/clarence/Desktop/OceanMiner/Training"  
+    #dir="/home/clarence/Desktop/OceanMiner/Testing"  
     scan=ScanFile(dir)  
     #subdirs=scan.scan_subdir()  
     files=scan.scan_files() 
@@ -86,8 +86,8 @@ if __name__=="__main__":
     image_row = 48
     image_col = 48
 
-    #save_fn = '/home/clarence/Desktop/OceanMiner/Training/training_data_ocean_miner_48_48_gray.mat'
-    save_fn = "/home/clarence/Desktop/OceanMiner/Testing/testing_data_ocean_miner_48_48_gray.mat"
+    save_fn = '/home/clarence/Desktop/OceanMiner/Training/training_data_ocean_miner_48_48_gray.mat'
+    #save_fn = "/home/clarence/Desktop/OceanMiner/Testing/testing_data_ocean_miner_48_48_gray.mat"
 
     data_array = np.ones( (files_num,image_row*image_col), dtype=np.int16 )
     label_array = np.ones( (files_num,1), dtype=np.int16 )

@@ -28,7 +28,7 @@ print 'train original shape:', x_train.shape
 print "data loaded successfully!"  
 
 #set training parameters 
-batch_size = 20
+batch_size = 40
 num_classes = 2
 epochs = 30
 
@@ -62,7 +62,7 @@ model.add(Conv2D(32, kernel_size=(4, 4),
                  activation='relu',
                  input_shape=input_shape))
 model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Conv2D(64, kernel_size=(4, 4), activation='relu'))
+model.add(Conv2D(64, kernel_size=(6, 6), activation='relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Flatten())
 model.add(Dense(128, activation='relu'))
@@ -70,7 +70,7 @@ model.add(Dense(num_classes, activation='softmax'))
 
 model.compile(loss=keras.losses.categorical_crossentropy,
               optimizer=keras.optimizers.Adadelta(),
-              metrics=['accuracy'])
+              metrics= ['accuracy'])
 
 model.fit(x_train, y_train,
           batch_size=batch_size,

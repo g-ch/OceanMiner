@@ -19,6 +19,7 @@ img_standard =cv2.resize(img_gray,(image_row,image_col),interpolation=cv2.INTER_
 img_predict = img_standard.reshape(1, 1, image_row, image_col)
 
 value = model.predict(img_predict, batch_size=32, verbose=0)
+print len(value[0])
 print value
 
 
