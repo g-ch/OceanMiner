@@ -14,22 +14,142 @@ from keras.models import load_model
 import cv2 
 import datetime
 from sklearn.externals import joblib
+import math
+
+
+UNCLASSIFIED = False
+NOISE = 0
 
 def datetime_toString(dt):
     return dt.strftime("%Y-%m-%d-%H")
 
-class Detect(object):
+
+""" Cluster Code: https://www.cnblogs.com/wsine/p/5180778.html """
+def dist(a, b):
+    return math.sqrt(np.power(a - b, 2).sum())
+
+def eps_neighbor(a, b, eps):
+    return dist(a, b) < eps
+
+def region_query(data, pointId, eps):
+    nPoints = data.shape[1]
+    seeds = []
+    for i in range(nPoints):
+        if eps_neighbor(data[:, pointId], data[:, i], eps):
+            seeds.append(i)
+    return seeds
+
+def expand_cluster(data, clusterResult, pointId, clusterId, eps, minPts):
+    seeds = region_query(data, pointId, eps)
+    if len(seeds) < minPts: 
+        clusterResult[pointId] = NOISE
+        return False
+    else:
+        clusterResult[pointId] = clusterId 
+        for seedId in seeds:
+            clusterResult[seedId] = clusterId
+
+        while len(seeds) > 0: 
+            currentPoint = seeds[0]
+            queryResults = region_query(data, currentPoint, eps)
+            if len(queryResults) >= minPts:
+                for i in range(len(queryResults)):
+                    resultPoint = queryResults[i]
+                    if clusterResult[resultPoint] == UNCLASSIFIED:
+                        seeds.append(resultPoint)
+                        clusterResult[resultPoint] = clusterId
+                    elif clusterResult[resultPoint] == NOISE:
+                        clusterResult[resultPoint] = clusterId
+            seeds = seeds[1:]
+        return True
+
+def dbscan(data, eps, minPts):
+    clusterId = 1
+    nPoints = data.shape[1]
+    clusterResult = [UNCLASSIFIED] * nPoints
+    for pointId in range(nPoints):
+        point = data[:, pointId]
+        if clusterResult[pointId] == UNCLASSIFIED:
+            if expand_cluster(data, clusterResult, pointId, clusterId, eps, minPts):
+                clusterId = clusterId + 1
+    return clusterResult, clusterId - 1
+
+
+
+
+class Detect(object): 
     """docstring for  detect"""
     def __init__(self):
         super(Detect, self).__init__()
 
+
     def draw_rects(self, positions, img): #positions[x][y][w][h]
         times = len(positions)
+        points = []
+        
         for m in range(times):
             size = len(positions[m])
             for i in range(size):  
+                points.append([positions[m][i][0]+positions[m][i][2]/2,positions[m][i][1]+positions[m][i][3]/2])
+       
+
+        data = np.mat(points).transpose()
+        print data
+        clusters, clusterNum = dbscan(data, 80, 2)
+        print clusters
+        
+        check_seq = 1 #NOTE: CLuster 0 is useless
+        max_num = 0
+        max_seq = 0
+
+        """Find cluster with largest number of points"""
+        while check_seq < 100:
+            
+            num = 0
+
+            for i in range(len(clusters)):
+                if clusters[i] == check_seq:
+                    num = num + 1
+
+            if num == 0:
+                break
+
+            if num > max_num:
+                max_num = num
+                max_seq = check_seq
+
+            check_seq = check_seq + 1
+
+        """ Add points """
+        x=[]; y=[]
+        for i in range(len(clusters)):
+            if clusters[i] == max_seq:
+                x.append(points[i][0])
+                y.append(points[i][1])
                 cv2.rectangle(img, (positions[m][i][0],positions[m][i][1]), (positions[m][i][0]+positions[m][i][2],positions[m][i][1]+positions[m][i][3]), (0,255,0), 2)
+
+            else:
+                cv2.rectangle(img, (positions[m][i][0],positions[m][i][1]), (positions[m][i][0]+positions[m][i][2],positions[m][i][1]+positions[m][i][3]), (255,0,0), 2)
+
+        #print x
+        #print y
+
+        #line_kb = np.polyfit(x, y, 1)
+        #print line_kb
+
+        x_acc = 0; y_acc = 0
+        for i in range(len(x)):
+            x_acc = x_acc + x[i]
+            y_acc = y_acc + y[i]
+
+        x_aver = x_acc / len(x)
+        y_aver = y_acc / len(y)
+
+        """ Draw direction. NOTE: car position is unstable!!! """
+        cv2.line(img, (int(x_aver),int(y_aver)), (int(self.image_width/2 + 200),int(self.image_height/2 + 100)), (0,0,255), 3)
+
         self.img_show = img
+
 
     def draw_and_save_rects(self, positions, img): #positions[x][y][w][h]
         times = len(positions)
@@ -73,6 +193,7 @@ class Detect(object):
                     j += 1
 
             print "left ",num," targets"
+            self.target_num = num
 
 
     def target_detect(self, file):
@@ -99,24 +220,26 @@ class Detect(object):
             window_rsize_x = int(self.window_width/self.it_scale**i)
             window_rsize_y = int(self.window_height/self.it_scale**i)
 
-            while window_y < self.image_height - self.window_height:    
+            while window_y < self.image_height - self.window_height -300: #NOTE: 300 to remove car part image    
                 
                 while window_x < self.image_width - self.window_width:   
                     
                     #print window_x, window_y
                     roi_img = self.img_scan[window_y : window_y+self.window_height, window_x : window_x+self.window_width]
+                    img_sobel = cv2.Sobel(roi_img,cv2.CV_8U,1,0,ksize=3)
                     #cv2.imshow("roi", roi_img)
                     #kk = cv2.waitKey(20)
 
+                    #Cascade Predict, MLP
                     roi_lda = roi_img.ravel()
                     pre_result = self.lda.predict_proba(roi_lda)
                     lda_count += 1
                     #print pre_result
-
-                    #Cascade Predict, MLP
-                    if pre_result[0][1] > 0.95:
-
-                        img_predict = roi_img.reshape(1, 1, self.window_width, self.window_height)
+               
+                    if pre_result[0][1] > 0.85:
+                        #img_predict = roi_img.reshape(1, 1, self.window_width, self.window_height)
+                        img_predict = img_sobel.reshape(1, 1, self.window_width, self.window_height)
+                        
                         value = self.model.predict(img_predict, batch_size=32, verbose=0)
                         cnn_count += 1
                         #print value
@@ -135,7 +258,9 @@ class Detect(object):
         #print target_position
         
         self.merge_rects(target_position)
-        self.draw_rects(target_position, img_copy)
+
+        if self.target_num > 2:
+            self.draw_rects(target_position, img_copy)       
         #draw_and_save_rects(target_position, img_copy)
 
 
@@ -143,7 +268,7 @@ class Detect(object):
         endtime = datetime.datetime.now()
         print "Time", (endtime - starttime).seconds
         print "lda:", lda_count, " cnn:", cnn_count
-        self.target_num = cnn_count
+        
 
         #cv2.imshow("image", img_copy)
         #kkk = cv2.waitKey()
@@ -209,7 +334,7 @@ class Q_Window(QWidget):
         qimg = QImage(cv2ImageRGB.data, cv2ImageRGB.shape[1], cv2ImageRGB.shape[0], QImage.Format_RGB888)
         self.image_View.setPixmap(QPixmap.fromImage(qimg))
 
-        display_info = "Found " + str(self.D.target_num) + " Manganese nodules."
+        display_info = "Found " + str(self.D.target_num) 
         self.info_View.setText(display_info)
 
         #QApplication.processEvents()

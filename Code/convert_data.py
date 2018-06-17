@@ -65,9 +65,19 @@ class ScanFile(object):
             subdir_list.append(dirpath)  
         return subdir_list  
   
-if __name__=="__main__":  
+if __name__=="__main__":
+
+    sobel_mode = 0
+
     dir="/home/clarence/Desktop/OceanMiner/Training"  
     #dir="/home/clarence/Desktop/OceanMiner/Testing"  
+
+    save_fn = '/home/clarence/Desktop/OceanMiner/Training/training_data_ocean_miner_48_48_gray.mat'
+    #save_fn = "/home/clarence/Desktop/OceanMiner/Testing/testing_data_ocean_miner_48_48_gray.mat"
+    #save_fn = '/home/clarence/Desktop/OceanMiner/Training/training_data_ocean_miner_48_48_sobel.mat'
+    #save_fn = '/home/clarence/Desktop/OceanMiner/Testing/testing_data_ocean_miner_48_48_sobel.mat'
+
+
     scan=ScanFile(dir)  
     #subdirs=scan.scan_subdir()  
     files=scan.scan_files() 
@@ -86,8 +96,7 @@ if __name__=="__main__":
     image_row = 48
     image_col = 48
 
-    save_fn = '/home/clarence/Desktop/OceanMiner/Training/training_data_ocean_miner_48_48_gray.mat'
-    #save_fn = "/home/clarence/Desktop/OceanMiner/Testing/testing_data_ocean_miner_48_48_gray.mat"
+    
 
     data_array = np.ones( (files_num,image_row*image_col), dtype=np.int16 )
     label_array = np.ones( (files_num,1), dtype=np.int16 )
@@ -100,6 +109,8 @@ if __name__=="__main__":
             img = cv2.imread(file,1) 
             img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             img_standard =cv2.resize(img_gray,(image_row,image_col),interpolation=cv2.INTER_CUBIC)
+            img_sobel = cv2.Sobel(img_standard,cv2.CV_8U,1,0,ksize=3)
+            #img_sobel2 = cv2.Sobel(img_standard,cv2.CV_8U,0,1,ksize=3)
 
             label = file.split('/')[-2] .split('/')[-1]
             print label
@@ -109,12 +120,17 @@ if __name__=="__main__":
 
             for i in range(image_row):
                 for j in range(image_col):
-                    data_array[counter,i*image_row+j] = img_standard[i,j]
+                    if sobel_mode == 1:
+                        data_array[counter,i*image_row+j] = img_sobel[i,j] #/ 2 + img_sobel2[i,j] / 2
+                    else:
+                        data_array[counter,i*image_row+j] = img_standard[i,j]
   
             counter += 1
            
-
-            cv2.imshow("Image", img_standard) 
+            if sobel_mode == 1:
+                cv2.imshow("Image", img_sobel) 
+            else:
+                cv2.imshow("Image", img_standard) 
             cv2.waitKey(10) 
     
     scio.savemat(save_fn, {'image': data_array,'label': label_array}) #save as mat file with two variables

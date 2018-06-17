@@ -12,10 +12,10 @@ import matplotlib.pyplot as plt
 import h5py
 
 #load data
-mat_train=u'/home/clarence/Desktop/OceanMiner/Training/training_data_ocean_miner_48_48_gray.mat'  
+mat_train=u'/home/clarence/Desktop/OceanMiner/Training/training_data_ocean_miner_48_48_sobel.mat'  
 train_data=scio.loadmat(mat_train)  
 
-mat_val=u'/home/clarence/Desktop/OceanMiner/Testing/testing_data_ocean_miner_48_48_gray.mat'  
+mat_val=u'/home/clarence/Desktop/OceanMiner/Testing/testing_data_ocean_miner_48_48_sobel.mat'  
 val_data=scio.loadmat(mat_val) 
 
 plt.close('all')  
