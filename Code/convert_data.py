@@ -67,7 +67,7 @@ class ScanFile(object):
   
 if __name__=="__main__":
 
-    sobel_mode = 0
+    sobel_mode = 0 #NOTE: change the path below
 
     dir="/home/clarence/Desktop/OceanMiner/Training"  
     #dir="/home/clarence/Desktop/OceanMiner/Testing"  
@@ -134,7 +134,6 @@ if __name__=="__main__":
             cv2.waitKey(10) 
     
     scio.savemat(save_fn, {'image': data_array,'label': label_array}) #save as mat file with two variables
-
 
 
 
