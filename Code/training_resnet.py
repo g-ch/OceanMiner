@@ -4,6 +4,7 @@ from keras.layers.normalization import BatchNormalization
 from keras.models import Model
 import scipy.io as scio
 import matplotlib.pyplot as plt
+import cv2
 
 if __name__ == "__main__":
     #load data
@@ -23,21 +24,17 @@ if __name__ == "__main__":
     print "data loaded successfully!"
 
     #set training parameters
-    batch_size = 40
+    batch_size = 32
     num_classes = 2
-    epochs = 30
+    epochs = 5
 
     # input image dimensions
     img_rows, img_cols = 224, 224
 
-    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, 3)
-    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, 3)
-    input_shape = (img_rows, img_cols, 3)
-
     x_train = x_train.astype('float32')
     x_test = x_test.astype('float32')
-    x_train /= 255
-    x_test /= 255
+    x_train /= 255.0
+    x_test /= 255.0
     print('x_train shape:', x_train.shape)
     print(x_train.shape[0], 'train samples')
     print(x_test.shape[0], 'test samples')
@@ -45,6 +42,10 @@ if __name__ == "__main__":
     # convert class vectors to binary class matrices
     y_train = keras.utils.to_categorical(y_train, num_classes)
     y_test = keras.utils.to_categorical(y_test, num_classes)
+
+    print "Labels:"
+    print y_train
+    print y_test
 
     base_model = keras.applications.resnet50.ResNet50(include_top=False, weights='imagenet', input_tensor=None, input_shape=(224, 224, 3))
 
@@ -72,4 +73,4 @@ if __name__ == "__main__":
     print('Test loss:', score[0])
     print('Test accuracy:', score[1])
 
-    model.save('model_224_224_resnet_model.h5')
+    model.save('model_224_224_resnet.h5')
