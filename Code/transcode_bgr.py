@@ -63,6 +63,8 @@ if __name__ == "__main__":
     dir = "TrainingData"
     save_fn = 'training_data_bgr_224_224_3.mat'
 
+    # dir = "ValidationData"
+    # save_fn = 'validation_data_bgr_224_224_3.mat'
 
     scan = ScanFile(dir)
     # subdirs=scan.scan_subdir()
@@ -82,7 +84,8 @@ if __name__ == "__main__":
     image_row = 224
     image_col = 224
 
-    data_array = np.ones((files_num, image_row * image_col * 3), dtype=np.int16)
+    data_array = []
+    #label_array = []
     label_array = np.ones((files_num, 1), dtype=np.int16)
 
     counter = 0
@@ -90,26 +93,21 @@ if __name__ == "__main__":
     for file in files:
         if os.path.splitext(file)[1] == '.png' or os.path.splitext(file)[1] == '.jpg':
 
-            img = cv2.imread(file, 1)
+            img = cv2.imread(file)
             img_standard = cv2.resize(img, (image_row, image_col), interpolation=cv2.INTER_CUBIC)
 
             # split the last subdirectory name to use as label(number start from 0)
             label = file.split('/')[-2].split('/')[-1]
 
             # change label to number
-            label_array[counter, 0] = int(label)
-
-            for i in range(image_row):
-                for j in range(image_col):
-                    data_array[counter, (i * image_col + j) * 3] = img_standard[j, i, 0]
-                    data_array[counter, (i * image_col + j) * 3 + 1] = img_standard[j, i, 1]
-                    data_array[counter, (i * image_col + j) * 3 + 2] = img_standard[j, i, 2]
+            #label_array.append(int(label))
+            label_array[counter] = int(label)
+            data_array.append(img_standard)
 
             counter += 1
 
-            print str(counter) + "\t" + label
+            print file.split('/')[-1] + "\t" + label
 
-            cv2.imshow("Image", img_standard)
-            cv2.waitKey(5)
-
+    for ll in label_array:
+        print ll
     scio.savemat(save_fn, {'image': data_array, 'label': label_array})  # save as mat file with two variables
