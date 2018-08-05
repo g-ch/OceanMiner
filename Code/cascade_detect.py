@@ -15,7 +15,7 @@ import cv2
 import datetime
 from sklearn.externals import joblib
 import math
-
+import time
 
 UNCLASSIFIED = False
 NOISE = 0
@@ -230,7 +230,7 @@ class Detect(object):
         self.org_img = img.copy()
         img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-        target_position = [];
+        target_position = []
 
         lda_count = 0
         cnn_count = 0
@@ -251,10 +251,13 @@ class Detect(object):
             window_rsize_x = int(self.window_width/self.it_scale**i)
             window_rsize_y = int(self.window_height/self.it_scale**i)
 
-            while window_y < self.image_height - self.window_height -300: #NOTE: 300 to remove car part image    
+            # while window_y < self.image_height - self.window_height -300: #NOTE: 300 to remove car part image    
                 
-                while window_x < self.image_width - self.window_width:   
-                    
+            #     while window_x < self.image_width - self.window_width:   
+            while window_y < scan_height - self.window_height -300: #NOTE: 300 to remove car part image    
+                
+                while window_x < scan_width - self.window_width:
+
                     #print window_x, window_y
                     roi_img = self.img_scan[window_y : window_y+self.window_height, window_x : window_x+self.window_width]
                     img_sobel = cv2.Sobel(roi_img,cv2.CV_8U,1,0,ksize=3)
@@ -270,13 +273,15 @@ class Detect(object):
 
                     #Cascade Predict, MLP
                     roi_lda = roi_img.ravel()
-                    pre_result = self.lda.predict_proba(roi_lda)
+                    pre_result = self.lda.predict_proba([roi_lda])
                     lda_count += 1
                     #print pre_result
                
                     if pre_result[0][1] > 0.85:
                         #img_predict = roi_img.reshape(1, 1, self.window_width, self.window_height)
                         img_predict = img_sobel.reshape(1, 1, self.window_width, self.window_height)
+                        img_predict = img_predict.astype('float32')
+                        img_predict /= 255
                         
                         value = self.model.predict(img_predict, batch_size=32, verbose=0)
                         cnn_count += 1
@@ -367,7 +372,7 @@ class Q_Window(QWidget):
 
         self.D.it_scale = 1
         self.D.it_times = 1
-        self.D.it_step = 15
+        self.D.it_step = 10
         print "Parameters Initialized"
 
     def detect(self):
@@ -375,7 +380,7 @@ class Q_Window(QWidget):
 
         #file = "/home/clarence/Desktop/OceanMiner/Testing/Moment.jpg"
         #src_img = cv2.imread(file,1)
-        cap = cv2.VideoCapture("../test.avi")
+        cap = cv2.VideoCapture("../test_desample_33_42.MP4")
         while(1):
             ret, src_img = cap.read() #read 
             self.D.target_detect(src_img) # detect
@@ -386,6 +391,9 @@ class Q_Window(QWidget):
 
             display_info = "Found " + str(self.D.target_num) 
             self.info_View.setText(display_info)
+
+            cv2.imshow("Result", self.D.img_show)
+            cv2.waitKey(50)
 
             if self.stop_flag == 1:  #exit
                 break

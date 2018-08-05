@@ -121,9 +121,9 @@ if __name__=="__main__":
             for i in range(image_row):
                 for j in range(image_col):
                     if sobel_mode == 1:
-                        data_array[counter,i*image_col+j] = img_sobel[j,i] #/ 2 + img_sobel2[i,j] / 2
+                        data_array[counter,i*image_row+j] = img_sobel[i,j] #/ 2 + img_sobel2[i,j] / 2
                     else:
-                        data_array[counter,i*image_col+j] = img_standard[j,i]
+                        data_array[counter,i*image_row+j] = img_standard[i,j]
   
             counter += 1
            
